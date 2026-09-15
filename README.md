@@ -8,8 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; }
     </style>
@@ -35,7 +33,12 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mot de passe</label>
-                <input type="password" id="loginPassword" required value="123456" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                <div class="relative">
+                    <input type="password" id="loginPassword" required value="123456" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none pr-10">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-indigo-600 focus:outline-none">
+                        <i id="togglePasswordIcon" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
             </div>
 
             <div>
@@ -101,7 +104,6 @@
 
         <!-- 1. SECTION KPIs (Calculs Dynamiques par Machine) -->
         <section id="sec-kpi" class="space-y-6">
-            <!-- Sélecteur de Machine -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-industry text-indigo-600 text-lg"></i>
@@ -115,7 +117,6 @@
                 </select>
             </div>
 
-            <!-- Cartes des Indicateurs -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                     <div class="text-xs font-bold text-slate-400 uppercase">MTBF (Temps Moyen Entre Pannes)</div>
@@ -215,7 +216,7 @@
         <!-- 5. SECTION DMAIC -->
         <section id="sec-dmaic" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-diagram-project text-indigo-600 mr-2"></i>Projets d'Amélioration Continu (DMAIC)</h2>
+                <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-diagram-project text-indigo-600 mr-2"></i>Projets d'Amélioration Continuous (DMAIC)</h2>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="dmaic-projects-container"></div>
         </section>
@@ -272,7 +273,7 @@
 
 <!-- SCRIPTS JAVASCRIPT -->
 <script>
-    const HEURES_OUVERTURE_MENSUEL = 160; // Base d'ouverture machine mensuelle
+    const HEURES_OUVERTURE_MENSUEL = 160;
 
     let dataOt = JSON.parse(localStorage.getItem('DATA_OT')) || [
         { id: 'OT-1001', equipement: 'Presse Hydraulique P-01', type: 'Correctif', duree: 3.5, desc: 'Fuite d\'huile vérin principal', priorite: 'Haute' },
@@ -297,6 +298,21 @@
         renderDmaic();
         updateKpiDashboard();
     });
+
+    // Fonction pour afficher / masquer le mot de passe
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('loginPassword');
+        const icon = document.getElementById('togglePasswordIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
 
     // Calcul dynamique des KPIs
     function updateKpiDashboard() {
