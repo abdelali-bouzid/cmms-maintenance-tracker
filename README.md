@@ -1,677 +1,511 @@
-# cmms-maintenance-tracker
-Scripts and tools for industrial maintenance management and automation.
-HTML
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full bg-slate-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMDEC PRO V1 - Gestion de la Maintenance & Criticité</title>
+    <title>PLATEFORME INDUSTRIELLE INTEGRÉE - GMAO | AMDEC | DMAIC | KPIs</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
+    <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js for Pareto -->
+    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        .crit-faible { background-color: #10b981; color: white; }
-        .crit-moyen { background-color: #f59e0b; color: white; }
-        .crit-eleve { background-color: #f97316; color: white; }
-        .crit-critique { background-color: #ef4444; color: white; }
+        .crit-faible { background-color: #dcfce7; color: #15803d; }
+        .crit-moyen { background-color: #fef9c3; color: #a16207; }
+        .crit-eleve { background-color: #ffedd5; color: #c2410c; }
+        .crit-critique { background-color: #fee2e2; color: #b91c1c; }
     </style>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="flex flex-col min-h-full font-sans text-slate-800">
 
-    <!-- Header / Navbar -->
-    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+<!-- PAGE DE CONNEXION (AUTHENTIFICATION) -->
+<div id="auth-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 border border-slate-700">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mb-4">
+                <i class="fa-solid fa-industry text-3xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-900">Plateforme Industrielle</h2>
+            <p class="text-sm text-slate-500 mt-1">GMAO • AMDEC • DMAIC • KPIs</p>
+        </div>
+
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Adresse Email</label>
+                <div class="relative">
+                    <i class="fa-solid fa-envelope absolute left-3 top-3 text-slate-400"></i>
+                    <input type="email" id="loginEmail" required value="admin@usine.com" class="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mot de passe</label>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-400"></i>
+                    <input type="password" id="loginPassword" required value="123456" class="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Rôle de Connexion</label>
+                <select id="loginRole" class="w-full border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <option value="Admin">Administrateur / Responsable Maintenance</option>
+                    <option value="Technicien">Technicien GMAO</option>
+                    <option value="Qualite">Ingénieur Amélioration Continue / Qualité</option>
+                </select>
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg shadow-lg transition duration-200">
+                <i class="fa-solid fa-right-to-bracket mr-2"></i> Se Connecter
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- APPLICATION PRINCIPALE -->
+<div id="app-screen" class="hidden flex flex-col min-h-screen">
+    
+    <!-- Navbar -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-gears text-2xl text-indigo-400"></i>
-                <h1 class="text-xl font-bold tracking-wide">AMDEC PRO <span class="text-xs bg-indigo-600 px-2 py-0.5 rounded text-white font-normal">V1.0</span></h1>
+                <h1 class="text-xl font-bold tracking-wide">SMART MAINTENANCE <span class="text-xs bg-indigo-600 px-2 py-0.5 rounded text-white font-normal">PRO</span></h1>
             </div>
             
-            <div class="flex items-center gap-2 flex-wrap">
-                <button onclick="exportJSON()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded text-sm flex items-center gap-2 border border-slate-700 transition">
-                    <i class="fa-solid fa-download text-indigo-400"></i> Export JSON
-                </button>
-                <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded text-sm flex items-center gap-2 border border-slate-700 cursor-pointer transition">
-                    <i class="fa-solid fa-upload text-emerald-400"></i> Import JSON
-                    <input type="file" id="importJsonFile" accept=".json" class="hidden" onchange="importJSON(event)">
-                </label>
-                <button onclick="exportCSV()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-2 transition">
-                    <i class="fa-solid fa-file-excel"></i> Export CSV
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-xs text-slate-400">Utilisateur connecté</div>
+                    <div class="text-sm font-semibold text-indigo-300" id="userDisplay">Admin</div>
+                </div>
+                <button onclick="handleLogout()" class="bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white px-3 py-1.5 rounded text-sm transition border border-red-500/30">
+                    <i class="fa-solid fa-power-off mr-1"></i> Déconnexion
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Content Area -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
 
         <!-- Navigation Tabs -->
-        <div class="flex border-b border-slate-300 gap-2 overflow-x-auto">
-            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2">
-                <i class="fa-solid fa-chart-pie"></i> Dashboard
+        <div class="flex border-b border-slate-300 gap-2 overflow-x-auto bg-white p-2 rounded-t-lg shadow-sm">
+            <button onclick="switchTab('kpi')" id="tab-kpi" class="tab-btn px-4 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2">
+                <i class="fa-solid fa-chart-line"></i> KPIs Performance
+            </button>
+            <button onclick="switchTab('gmao')" id="tab-gmao" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
+                <i class="fa-solid fa-wrench"></i> GMAO (Ordres de Travail)
             </button>
             <button onclick="switchTab('amdec')" id="tab-amdec" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
-                <i class="fa-solid fa-list-check"></i> Analyses AMDEC
+                <i class="fa-solid fa-triangle-exclamation"></i> AMDEC & Risques
             </button>
-            <button onclick="switchTab('equipements')" id="tab-equipements" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
-                <i class="fa-solid fa-wrench"></i> Équipements
-            </button>
-            <button onclick="switchTab('pareto')" id="tab-pareto" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
-                <i class="fa-solid fa-chart-bar"></i> Diagramme de Pareto
+            <button onclick="switchTab('dmaic')" id="tab-dmaic" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
+                <i class="fa-solid fa-diagram-project"></i> Projets DMAIC
             </button>
         </div>
 
-        <!-- SECTION 1: DASHBOARD -->
-        <section id="sec-dashboard" class="space-y-6">
-            <!-- Stats Grid -->
+        <!-- SECTION 1: INDICATEURS DE PERFORMANCE (KPIs) -->
+        <section id="sec-kpi" class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-lg shadow border border-slate-200">
-                    <div class="text-sm font-medium text-slate-500">Total Analyses AMDEC</div>
-                    <div class="text-3xl font-bold text-slate-800 mt-2" id="stat-total">0</div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-400 uppercase">Taux de Rendement Synthétique (TRS)</div>
+                    <div class="text-3xl font-extrabold text-emerald-600 mt-2">84.5 %</div>
+                    <div class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-arrow-up text-emerald-500"></i> +2.1% ce mois</div>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow border border-slate-200">
-                    <div class="text-sm font-medium text-slate-500">Risques Critiques (NPR ≥ 100)</div>
-                    <div class="text-3xl font-bold text-red-600 mt-2" id="stat-critique">0</div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-400 uppercase">MTBF (Temps Moyen Entre Pannes)</div>
+                    <div class="text-3xl font-extrabold text-indigo-600 mt-2">142 hrs</div>
+                    <div class="text-xs text-slate-500 mt-1">Objectif: > 120 hrs</div>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow border border-slate-200">
-                    <div class="text-sm font-medium text-slate-500">Équipements Enregistrés</div>
-                    <div class="text-3xl font-bold text-indigo-600 mt-2" id="stat-equipements">0</div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-400 uppercase">MTTR (Temps Moyen de Réparation)</div>
+                    <div class="text-3xl font-extrabold text-amber-600 mt-2">1.8 hrs</div>
+                    <div class="text-xs text-slate-500 mt-1">Objectif: < 2.0 hrs</div>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow border border-slate-200">
-                    <div class="text-sm font-medium text-slate-500">Actions En Cours / A Faire</div>
-                    <div class="text-3xl font-bold text-amber-600 mt-2" id="stat-actions">0</div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-400 uppercase">Disponibilité Équipements</div>
+                    <div class="text-3xl font-extrabold text-blue-600 mt-2">98.7 %</div>
+                    <div class="text-xs text-slate-500 mt-1">Disponibilité Opérationnelle</div>
                 </div>
             </div>
 
-            <!-- Summary Table / Recent High Risks -->
-            <div class="bg-white rounded-lg shadow border border-slate-200 p-5">
-                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Points de Vigilance Élevés & Critiques
-                </h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-slate-100 border-b border-slate-200 text-slate-600">
-                                <th class="p-3">Équipement</th>
-                                <th class="p-3">Mode de Défaillance</th>
-                                <th class="p-3">Cause</th>
-                                <th class="p-3">NPR</th>
-                                <th class="p-3">Criticité</th>
-                                <th class="p-3">Action Réductrice</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-dashboard-high-risk">
-                            <!-- Injected JS -->
-                        </tbody>
-                    </table>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4">Évolution de la Disponibilité Machine (%)</h3>
+                    <div class="h-64"><canvas id="kpiDispChart"></canvas></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4">Répartition du Temps d'Arrêt (Par Cause)</h3>
+                    <div class="h-64"><canvas id="kpiArretChart"></canvas></div>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 2: AMDEC MANAGEMENT -->
+        <!-- SECTION 2: GMAO (ORDRES DE TRAVAIL) -->
+        <section id="sec-gmao" class="hidden space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-list-check text-indigo-600 mr-2"></i>Ordres de Travail (OT)</h2>
+                <button onclick="openOtModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow">
+                    <i class="fa-solid fa-plus mr-1"></i> Créer un OT
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-slate-800 text-white uppercase text-xs">
+                        <tr>
+                            <th class="p-3">N° OT</th>
+                            <th class="p-3">Équipement</th>
+                            <th class="p-3">Type</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3">Statut</th>
+                            <th class="p-3">Priorité</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-ot-body" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 3: AMDEC -->
         <section id="sec-amdec" class="hidden space-y-6">
-            <!-- Control Bar -->
-            <div class="bg-white p-4 rounded-lg shadow border border-slate-200 flex flex-wrap gap-4 items-center justify-between">
-                <div class="flex items-center gap-3 flex-grow max-w-lg">
-                    <div class="relative w-full">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
-                        <input type="text" id="searchAmdec" oninput="renderAMDEC()" placeholder="Rechercher équipement, élément, cause..." class="w-full pl-9 pr-4 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                    <select id="filterCriticite" onchange="renderAMDEC()" class="border py-2 px-3 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">Toutes les criticités</option>
-                        <option value="Faible">Faible</option>
-                        <option value="Moyen">Moyen</option>
-                        <option value="Élevé">Élevé</option>
-                        <option value="Critique">Critique</option>
-                    </select>
-                </div>
-                <button onclick="openAmdecModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow transition">
-                    <i class="fa-solid fa-plus"></i> Nouvelle Analyse AMDEC
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-shield-halved text-indigo-600 mr-2"></i>Analyse des Risques (AMDEC)</h2>
+                <button onclick="openAmdecModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow">
+                    <i class="fa-solid fa-plus mr-1"></i> Nouvelle Fiche AMDEC
                 </button>
             </div>
 
-            <!-- AMDEC Table -->
-            <div class="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs md:text-sm">
-                        <thead class="bg-slate-800 text-white uppercase text-xs">
-                            <tr>
-                                <th class="p-3">Équipement</th>
-                                <th class="p-3">Élément / S.Ensemble</th>
-                                <th class="p-3">Mode Défaillance</th>
-                                <th class="p-3">Effet</th>
-                                <th class="p-3">Cause</th>
-                                <th class="p-3 text-center">G</th>
-                                <th class="p-3 text-center">O</th>
-                                <th class="p-3 text-center">D</th>
-                                <th class="p-3 text-center">NPR</th>
-                                <th class="p-3 text-center">Criticité</th>
-                                <th class="p-3">Action Préconisée</th>
-                                <th class="p-3 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-amdec-body" class="divide-y divide-slate-200">
-                            <!-- Injected JS -->
-                        </tbody>
-                    </table>
-                </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-slate-800 text-white uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Équipement</th>
+                            <th class="p-3">Mode Défaillance</th>
+                            <th class="p-3 text-center">G</th>
+                            <th class="p-3 text-center">O</th>
+                            <th class="p-3 text-center">D</th>
+                            <th class="p-3 text-center">NPR</th>
+                            <th class="p-3 text-center">Criticité</th>
+                            <th class="p-3">Action Préconisée</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-amdec-body" class="divide-y divide-slate-200"></tbody>
+                </table>
             </div>
         </section>
 
-        <!-- SECTION 3: EQUIPEMENTS -->
-        <section id="sec-equipements" class="hidden space-y-6">
-            <div class="bg-white p-4 rounded-lg shadow border border-slate-200 flex justify-between items-center">
-                <h2 class="text-lg font-bold text-slate-800">Gestion du Parc Équipement</h2>
-                <button onclick="openEquipementModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow transition">
-                    <i class="fa-solid fa-plus"></i> Ajouter Équipement
+        <!-- SECTION 4: DMAIC (AMÉLIORATION CONTINUE) -->
+        <section id="sec-dmaic" class="hidden space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-diagram-project text-indigo-600 mr-2"></i>Projets d'Amélioration DMAIC</h2>
+                <button onclick="openDmaicModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow">
+                    <i class="fa-solid fa-plus mr-1"></i> Nouveau Projet DMAIC
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="grid-equipements">
-                <!-- Injected JS -->
-            </div>
-        </section>
-
-        <!-- SECTION 4: PARETO -->
-        <section id="sec-pareto" class="hidden space-y-6">
-            <div class="bg-white p-5 rounded-lg shadow border border-slate-200">
-                <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
-                    <h2 class="text-lg font-bold text-slate-800">Analyse de Pareto des Risques (NPR Cumulé)</h2>
-                    <select id="paretoFilterType" onchange="updateParetoChart()" class="border py-2 px-3 rounded-md text-sm outline-none">
-                        <option value="equipement">Par Équipement</option>
-                        <option value="zone">Par Zone / Secteur</option>
-                    </select>
-                </div>
-                <div class="relative h-96 w-full">
-                    <canvas id="paretoChart"></canvas>
-                </div>
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="dmaic-projects-container"></div>
         </section>
 
     </main>
+</div>
 
-    <!-- MODAL AMDEC (Form Add/Edit) -->
-    <div id="modalAmdec" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden my-8">
-            <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
-                <h3 class="text-lg font-bold" id="modalAmdecTitle">Nouvelle Analyse AMDEC</h3>
-                <button onclick="closeAmdecModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <form id="formAmdec" onsubmit="saveAMDEC(event)" class="p-6 space-y-4">
-                <input type="hidden" id="amdecId">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Équipement *</label>
-                        <select id="amdecEquipement" required class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-                            <!-- Injected JS -->
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sous-ensemble / Élément *</label>
-                        <input type="text" id="amdecElement" required class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="ex: Roulement, Moteur...">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mode de Défaillance *</label>
-                        <input type="text" id="amdecMode" required class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="ex: Surchauffe, Grippage...">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Effet de la Défaillance *</label>
-                        <input type="text" id="amdecEffet" required class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="ex: Arrêt ligne, Casse...">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Cause de la Défaillance *</label>
-                    <input type="text" id="amdecCause" required class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="ex: Défaut de lubrification...">
-                </div>
-
-                <!-- GOD Rating Grid -->
-                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 grid grid-cols-3 gap-3 text-center">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Gravité (G) [1-10]</label>
-                        <input type="number" min="1" max="10" id="amdecG" value="1" oninput="calcNPR()" required class="w-full border rounded p-2 text-center text-sm font-bold text-slate-800">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Occurrence (O) [1-10]</label>
-                        <input type="number" min="1" max="10" id="amdecO" value="1" oninput="calcNPR()" required class="w-full border rounded p-2 text-center text-sm font-bold text-slate-800">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Détection (D) [1-10]</label>
-                        <input type="number" min="1" max="10" id="amdecD" value="1" oninput="calcNPR()" required class="w-full border rounded p-2 text-center text-sm font-bold text-slate-800">
-                    </div>
-                </div>
-
-                <!-- NPR Preview -->
-                <div class="flex justify-between items-center p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
-                    <span class="text-sm font-semibold text-indigo-900">NPR Calculé = G × O × D</span>
-                    <div class="flex items-center gap-3">
-                        <span id="previewNPR" class="text-xl font-black text-indigo-600">1</span>
-                        <span id="previewCriticite" class="text-xs font-bold px-2.5 py-1 rounded crit-faible">Faible</span>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Plan d'action Préconisé</label>
-                    <textarea id="amdecAction" rows="2" class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Planifier graissage mensuel..."></textarea>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-4 border-t">
-                    <button type="button" onclick="closeAmdecModal()" class="px-4 py-2 border rounded text-sm font-semibold text-slate-600 hover:bg-slate-100">Annuler</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-semibold shadow">Enregistrer</button>
-                </div>
-            </form>
+<!-- MODAL CRÉATION OT GMAO -->
+<div id="modalOt" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold">Nouveau Ordre de Travail (OT)</h3>
+            <button onclick="closeOtModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
         </div>
-    </div>
-
-    <!-- MODAL EQUIPEMENT -->
-    <div id="modalEquipement" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-            <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
-                <h3 class="text-lg font-bold">Ajouter un Équipement</h3>
-                <button onclick="closeEquipementModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+        <form onsubmit="saveOt(event)" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Équipement</label>
+                <input type="text" id="otEquipement" required class="w-full border rounded p-2 text-sm outline-none">
             </div>
-            <form id="formEquipement" onsubmit="saveEquipement(event)" class="p-6 space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nom / Code Équipement *</label>
-                    <input type="text" id="eqNom" required class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="ex: Moteur Pompe P-101">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Zone / Secteur *</label>
-                    <input type="text" id="eqZone" required class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="ex: Zone Broyage">
-                </div>
-                <div class="flex justify-end gap-3 pt-4 border-t">
-                    <button type="button" onclick="closeEquipementModal()" class="px-4 py-2 border rounded text-sm font-semibold text-slate-600 hover:bg-slate-100">Annuler</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-semibold shadow">Créer</button>
-                </div>
-            </form>
-        </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Type d'intervention</label>
+                <select id="otType" class="w-full border rounded p-2 text-sm outline-none">
+                    <option value="Correctif">Correctif (Panne)</option>
+                    <option value="Préventif">Préventif (Planifié)</option>
+                    <option value="Amélioratif">Amélioratif (DMAIC)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Description du problème / travail</label>
+                <textarea id="otDesc" required rows="2" class="w-full border rounded p-2 text-sm outline-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Priorité</label>
+                <select id="otPriorite" class="w-full border rounded p-2 text-sm outline-none">
+                    <option value="Haute">Haute (Urgent)</option>
+                    <option value="Moyenne" selected>Moyenne</option>
+                    <option value="Basse">Basse</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" onclick="closeOtModal()" class="px-4 py-2 border rounded text-sm font-semibold text-slate-600">Annuler</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded text-sm font-semibold">Créer OT</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- JavaScript Logic -->
-    <script>
-        // Data Structures & Storage
-        let dataEquipements = JSON.parse(localStorage.getItem('AMDEC_EQUIPEMENTS')) || [
-            { id: 1, nom: "Pompe Hydraulique P-01", zone: "Zone A - Extrusion" },
-            { id: 2, nom: "Moteur Principal M-02", zone: "Zone B - Broyage" }
-        ];
+<!-- MODAL CRÉATION PROJET DMAIC -->
+<div id="modalDmaic" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+        <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold">Créer un Projet DMAIC</h3>
+            <button onclick="closeDmaicModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form onsubmit="saveDmaic(event)" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Titre du Projet</label>
+                <input type="text" id="dmaicTitre" required placeholder="ex: Réduction du MTTR sur Ligne 1" class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Équipement / Zone Cible</label>
+                <input type="text" id="dmaicCible" required placeholder="ex: Presse Hydraulique P-200" class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Étape Actuelle (DMAIC)</label>
+                <select id="dmaicEtape" class="w-full border rounded p-2 text-sm outline-none">
+                    <option value="D">D - Définir</option>
+                    <option value="M">M - Mesurer</option>
+                    <option value="A">A - Analyser</option>
+                    <option value="I">I - Innover/Améliorer</option>
+                    <option value="C">C - Contrôler</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Objectif chiffré</label>
+                <input type="text" id="dmaicObjectif" required placeholder="ex: Réduire les arrêts de 30%" class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" onclick="closeDmaicModal()" class="px-4 py-2 border rounded text-sm font-semibold text-slate-600">Annuler</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded text-sm font-semibold">Enregistrer Projet</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        let dataAmdec = JSON.parse(localStorage.getItem('AMDEC_DATA')) || [
-            { id: 1, equipementId: 1, element: "Joint d'étanchéité", mode: "Fuite d'huile", effet: "Baisse de pression systeme", cause: "Usure naturelle / Pression", g: 6, o: 5, d: 4, npr: 120, criticite: "Critique", action: "Remplacement préventif tous les 6 mois" },
-            { id: 2, equipementId: 2, element: "Roulement à billes", mode: "Grippage", effet: "Arrêt complet du moteur", cause: "Manque de graissage", g: 8, o: 3, d: 3, npr: 72, criticite: "Élevé", action: "Mettre en place un plan de graissage hebdo" }
-        ];
+<!-- SCRIPTS JAVASCRIPT -->
+<script>
+    // Stockage global en mémoire (sauvegardé dans localStorage)
+    let currentUser = null;
 
-        let paretoChartInstance = null;
+    let dataOt = JSON.parse(localStorage.getItem('DATA_OT')) || [
+        { id: 'OT-1001', equipement: 'Pompe Hydraulique P-01', type: 'Correctif', desc: 'Remplacement joint fuite huile', statut: 'En cours', priorite: 'Haute' },
+        { id: 'OT-1002', equipement: 'Moteur Principal M-02', type: 'Préventif', desc: 'Graissage roulements mensuel', statut: 'Planifié', priorite: 'Moyenne' }
+    ];
 
-        // Initialize App
-        document.addEventListener("DOMContentLoaded", () => {
-            saveDataLocally();
-            renderDashboard();
-            renderAMDEC();
-            renderEquipements();
-            initParetoChart();
+    let dataAmdec = JSON.parse(localStorage.getItem('DATA_AMDEC')) || [
+        { equipement: 'Pompe P-01', mode: 'Fuite d\'huile', g: 6, o: 5, d: 4, npr: 120, action: 'Changement préventif joints' },
+        { equipement: 'Moteur M-02', mode: 'Grippage roulement', g: 8, o: 3, d: 3, npr: 72, action: 'Plan de graissage hebdomadaire' }
+    ];
+
+    let dataDmaic = JSON.parse(localStorage.getItem('DATA_DMAIC')) || [
+        { id: 1, titre: 'Optimisation de la disponibilité Extrudeuse', cible: 'Extrudeuse B-02', etape: 'A', objectif: 'Gain de 5% de TRS', progression: 50 },
+        { id: 2, titre: 'Réduction du temps de micro-arrêts', cible: 'Ligne d\'emballage', etape: 'I', objectif: '-20% d\'arrêt non planifié', progression: 75 }
+    ];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        checkSession();
+        initKpiCharts();
+        renderOt();
+        renderAmdec();
+        renderDmaic();
+    });
+
+    // --- Authentification ---
+    function handleLogin(e) {
+        e.preventDefault();
+        const role = document.getElementById('loginRole').value;
+        currentUser = { email: document.getElementById('loginEmail').value, role: role };
+        localStorage.setItem('SESSION_USER', JSON.stringify(currentUser));
+        checkSession();
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('SESSION_USER');
+        currentUser = null;
+        checkSession();
+    }
+
+    function checkSession() {
+        const stored = localStorage.getItem('SESSION_USER');
+        if (stored) {
+            currentUser = JSON.parse(stored);
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('userDisplay').textContent = `${currentUser.email} (${currentUser.role})`;
+        } else {
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('app-screen').classList.add('hidden');
+        }
+    }
+
+    // --- Navigation ---
+    function switchTab(tab) {
+        ['kpi', 'gmao', 'amdec', 'dmaic'].forEach(t => {
+            document.getElementById(`sec-${t}`).classList.add('hidden');
+            document.getElementById(`tab-${t}`).classList.remove('text-indigo-600', 'border-indigo-600');
+            document.getElementById(`tab-${t}`).classList.add('text-slate-600', 'border-transparent');
         });
 
-        function saveDataLocally() {
-            localStorage.setItem('AMDEC_EQUIPEMENTS', JSON.stringify(dataEquipements));
-            localStorage.setItem('AMDEC_DATA', JSON.stringify(dataAmdec));
-        }
+        document.getElementById(`sec-${tab}`).classList.remove('hidden');
+        document.getElementById(`tab-${tab}`).classList.add('text-indigo-600', 'border-indigo-600');
+        document.getElementById(`tab-${tab}`).classList.remove('text-slate-600', 'border-transparent');
+    }
 
-        // Tab Switcher
-        function switchTab(tab) {
-            ['dashboard', 'amdec', 'equipements', 'pareto'].forEach(t => {
-                document.getElementById(`sec-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('text-indigo-600', 'border-indigo-600');
-                document.getElementById(`tab-${t}`).classList.add('text-slate-600', 'border-transparent');
-            });
+    // --- GMAO ---
+    function renderOt() {
+        const tbody = document.getElementById('table-ot-body');
+        tbody.innerHTML = '';
+        dataOt.forEach(ot => {
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-bold text-slate-800">${ot.id}</td>
+                    <td class="p-3 font-semibold">${ot.equipement}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-xs ${ot.type === 'Correctif' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">${ot.type}</span></td>
+                    <td class="p-3 text-slate-600">${ot.desc}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800">${ot.statut}</span></td>
+                    <td class="p-3 font-bold text-xs ${ot.priorite === 'Haute' ? 'text-red-600' : 'text-slate-600'}">${ot.priorite}</td>
+                </tr>
+            `;
+        });
+    }
 
-            document.getElementById(`sec-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).classList.add('text-indigo-600', 'border-indigo-600');
-            document.getElementById(`tab-${tab}`).classList.remove('text-slate-600', 'border-transparent');
+    function openOtModal() { document.getElementById('modalOt').classList.remove('hidden'); }
+    function closeOtModal() { document.getElementById('modalOt').classList.add('hidden'); }
 
-            if (tab === 'dashboard') renderDashboard();
-            if (tab === 'pareto') updateParetoChart();
-        }
+    function saveOt(e) {
+        e.preventDefault();
+        const newOt = {
+            id: 'OT-' + (1000 + dataOt.length + 1),
+            equipement: document.getElementById('otEquipement').value,
+            type: document.getElementById('otType').value,
+            desc: document.getElementById('otDesc').value,
+            statut: 'Planifié',
+            priorite: document.getElementById('otPriorite').value
+        };
+        dataOt.push(newOt);
+        localStorage.setItem('DATA_OT', JSON.stringify(dataOt));
+        renderOt();
+        closeOtModal();
+    }
 
-        // Helper: Get Criticite Level
-        function calculateCriticite(npr) {
-            if (npr < 30) return { label: 'Faible', class: 'crit-faible' };
-            if (npr < 70) return { label: 'Moyen', class: 'crit-moyen' };
-            if (npr < 100) return { label: 'Élevé', class: 'crit-eleve' };
-            return { label: 'Critique', class: 'crit-critique' };
-        }
+    // --- AMDEC ---
+    function renderAmdec() {
+        const tbody = document.getElementById('table-amdec-body');
+        tbody.innerHTML = '';
+        dataAmdec.forEach(item => {
+            const critClass = item.npr >= 100 ? 'crit-critique' : (item.npr >= 70 ? 'crit-eleve' : 'crit-faible');
+            const critLabel = item.npr >= 100 ? 'Critique' : (item.npr >= 70 ? 'Élevé' : 'Faible');
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-semibold text-slate-800">${item.equipement}</td>
+                    <td class="p-3">${item.mode}</td>
+                    <td class="p-3 text-center">${item.g}</td>
+                    <td class="p-3 text-center">${item.o}</td>
+                    <td class="p-3 text-center">${item.d}</td>
+                    <td class="p-3 text-center font-bold">${item.npr}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${critClass}">${critLabel}</span></td>
+                    <td class="p-3 text-slate-600">${item.action}</td>
+                </tr>
+            `;
+        });
+    }
 
-        // Calculate NPR Live
-        function calcNPR() {
-            const g = parseInt(document.getElementById('amdecG').value) || 1;
-            const o = parseInt(document.getElementById('amdecO').value) || 1;
-            const d = parseInt(document.getElementById('amdecD').value) || 1;
-            const npr = g * o * d;
-            
-            const critInfo = calculateCriticite(npr);
-            const previewNPR = document.getElementById('previewNPR');
-            const previewCrit = document.getElementById('previewCriticite');
+    // --- DMAIC ---
+    function renderDmaic() {
+        const container = document.getElementById('dmaic-projects-container');
+        container.innerHTML = '';
+        
+        const etapeLabels = { 'D': 'Définir', 'M': 'Mesurer', 'A': 'Analysier', 'I': 'Innover/Améliorer', 'C': 'Contrôler' };
 
-            previewNPR.textContent = npr;
-            previewCrit.textContent = critInfo.label;
-            previewCrit.className = `text-xs font-bold px-2.5 py-1 rounded ${critInfo.class}`;
-        }
-
-        // Render Dashboard
-        function renderDashboard() {
-            document.getElementById('stat-total').textContent = dataAmdec.length;
-            document.getElementById('stat-critique').textContent = dataAmdec.filter(a => a.npr >= 100).length;
-            document.getElementById('stat-equipements').textContent = dataEquipements.length;
-            document.getElementById('stat-actions').textContent = dataAmdec.filter(a => a.action && a.action.trim() !== '').length;
-
-            const highRiskTable = document.getElementById('table-dashboard-high-risk');
-            highRiskTable.innerHTML = '';
-
-            const highRisks = dataAmdec.filter(a => a.npr >= 70).sort((a, b) => b.npr - a.npr);
-
-            if (highRisks.length === 0) {
-                highRiskTable.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Aucun risque élevé ou critique détecté.</td></tr>`;
-                return;
-            }
-
-            highRisks.forEach(item => {
-                const eq = dataEquipements.find(e => e.id === item.equipementId);
-                const crit = calculateCriticite(item.npr);
-                highRiskTable.innerHTML += `
-                    <tr class="border-b border-slate-100 hover:bg-slate-50">
-                        <td class="p-3 font-semibold text-slate-700">${eq ? eq.nom : 'Inconnu'}</td>
-                        <td class="p-3">${item.mode}</td>
-                        <td class="p-3">${item.cause}</td>
-                        <td class="p-3 font-bold">${item.npr}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-bold ${crit.class}">${crit.label}</span></td>
-                        <td class="p-3 text-slate-600">${item.action || 'Aucune'}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        // Render AMDEC Table
-        function renderAMDEC() {
-            const tbody = document.getElementById('table-amdec-body');
-            const search = document.getElementById('searchAmdec').value.toLowerCase();
-            const filterCrit = document.getElementById('filterCriticite').value;
-
-            tbody.innerHTML = '';
-
-            let filtered = dataAmdec.filter(item => {
-                const eq = dataEquipements.find(e => e.id === item.equipementId);
-                const eqName = eq ? eq.nom.toLowerCase() : '';
-                const matchesSearch = eqName.includes(search) || 
-                                      item.element.toLowerCase().includes(search) || 
-                                      item.mode.toLowerCase().includes(search) || 
-                                      item.cause.toLowerCase().includes(search);
-                const crit = calculateCriticite(item.npr).label;
-                const matchesCrit = filterCrit === '' || crit === filterCrit;
-
-                return matchesSearch && matchesCrit;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-slate-400">Aucune donnée AMDEC trouvée.</td></tr>`;
-                return;
-            }
-
-            filtered.forEach(item => {
-                const eq = dataEquipements.find(e => e.id === item.equipementId);
-                const crit = calculateCriticite(item.npr);
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-3 font-medium text-slate-800">${eq ? eq.nom : 'Inconnu'}</td>
-                        <td class="p-3">${item.element}</td>
-                        <td class="p-3">${item.mode}</td>
-                        <td class="p-3 text-slate-500">${item.effet}</td>
-                        <td class="p-3 text-slate-500">${item.cause}</td>
-                        <td class="p-3 text-center font-semibold">${item.g}</td>
-                        <td class="p-3 text-center font-semibold">${item.o}</td>
-                        <td class="p-3 text-center font-semibold">${item.d}</td>
-                        <td class="p-3 text-center font-bold text-slate-900">${item.npr}</td>
-                        <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${crit.class}">${crit.label}</span></td>
-                        <td class="p-3 text-slate-600">${item.action}</td>
-                        <td class="p-3 text-center space-x-2">
-                            <button onclick="editAMDEC(${item.id})" class="text-indigo-600 hover:text-indigo-900"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button onclick="deleteAMDEC(${item.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        // Open/Close Modals AMDEC
-        function openAmdecModal(editId = null) {
-            const selectEq = document.getElementById('amdecEquipement');
-            selectEq.innerHTML = '';
-            dataEquipements.forEach(eq => {
-                selectEq.innerHTML += `<option value="${eq.id}">${eq.nom} (${eq.zone})</option>`;
-            });
-
-            if (editId) {
-                const item = dataAmdec.find(a => a.id === editId);
-                document.getElementById('modalAmdecTitle').textContent = "Modifier l'Analyse AMDEC";
-                document.getElementById('amdecId').value = item.id;
-                document.getElementById('amdecEquipement').value = item.equipementId;
-                document.getElementById('amdecElement').value = item.element;
-                document.getElementById('amdecMode').value = item.mode;
-                document.getElementById('amdecEffet').value = item.effet;
-                document.getElementById('amdecCause').value = item.cause;
-                document.getElementById('amdecG').value = item.g;
-                document.getElementById('amdecO').value = item.o;
-                document.getElementById('amdecD').value = item.d;
-                document.getElementById('amdecAction').value = item.action;
-            } else {
-                document.getElementById('modalAmdecTitle').textContent = "Nouvelle Analyse AMDEC";
-                document.getElementById('formAmdec').reset();
-                document.getElementById('amdecId').value = '';
-            }
-            calcNPR();
-            document.getElementById('modalAmdec').classList.remove('hidden');
-        }
-
-        function closeAmdecModal() {
-            document.getElementById('modalAmdec').classList.add('hidden');
-        }
-
-        // Save AMDEC Item
-        function saveAMDEC(e) {
-            e.preventDefault();
-            const id = document.getElementById('amdecId').value;
-            const g = parseInt(document.getElementById('amdecG').value);
-            const o = parseInt(document.getElementById('amdecO').value);
-            const d = parseInt(document.getElementById('amdecD').value);
-            const npr = g * o * d;
-
-            const amdecObj = {
-                id: id ? parseInt(id) : Date.now(),
-                equipementId: parseInt(document.getElementById('amdecEquipement').value),
-                element: document.getElementById('amdecElement').value,
-                mode: document.getElementById('amdecMode').value,
-                effet: document.getElementById('amdecEffet').value,
-                cause: document.getElementById('amdecCause').value,
-                g, o, d, npr,
-                criticite: calculateCriticite(npr).label,
-                action: document.getElementById('amdecAction').value
-            };
-
-            if (id) {
-                const index = dataAmdec.findIndex(a => a.id === parseInt(id));
-                dataAmdec[index] = amdecObj;
-            } else {
-                dataAmdec.push(amdecObj);
-            }
-
-            saveDataLocally();
-            closeAmdecModal();
-            renderAMDEC();
-        }
-
-        function editAMDEC(id) {
-            openAmdecModal(id);
-        }
-
-        function deleteAMDEC(id) {
-            if (confirm("Voulez-vous vraiment supprimer cette ligne AMDEC ?")) {
-                dataAmdec = dataAmdec.filter(a => a.id !== id);
-                saveDataLocally();
-                renderAMDEC();
-            }
-        }
-
-        // Equipements Management
-        function renderEquipements() {
-            const grid = document.getElementById('grid-equipements');
-            grid.innerHTML = '';
-
-            dataEquipements.forEach(eq => {
-                const countAmdec = dataAmdec.filter(a => a.equipementId === eq.id).length;
-                grid.innerHTML += `
-                    <div class="bg-white p-5 rounded-lg shadow border border-slate-200 flex justify-between items-start">
+        dataDmaic.forEach(p => {
+            container.innerHTML += `
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex justify-between items-start">
                         <div>
-                            <h3 class="font-bold text-slate-800 text-base">${eq.nom}</h3>
-                            <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot"></i> ${eq.zone}</p>
-                            <span class="inline-block mt-3 bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-medium">
-                                ${countAmdec} Analyse(s) AMDEC
-                            </span>
+                            <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded">Étape ${p.etape} - ${etapeLabels[p.etape]}</span>
+                            <h3 class="font-bold text-slate-800 text-lg mt-2">${p.titre}</h3>
+                            <p class="text-xs text-slate-500"><i class="fa-solid fa-cube"></i> Équipement: ${p.cible}</p>
                         </div>
-                        <button onclick="deleteEquipement(${eq.id})" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
                     </div>
-                `;
-            });
-        }
+                    
+                    <div class="text-sm bg-slate-50 p-3 rounded border border-slate-100">
+                        <strong class="text-slate-700">Objectif:</strong> ${p.objectif}
+                    </div>
 
-        function openEquipementModal() {
-            document.getElementById('formEquipement').reset();
-            document.getElementById('modalEquipement').classList.remove('hidden');
-        }
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                            <span>Avancement du Projet</span>
+                            <span>${p.progression}%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                            <div class="bg-indigo-600 h-full" style="width: ${p.progression}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
 
-        function closeEquipementModal() {
-            document.getElementById('modalEquipement').classList.add('hidden');
-        }
+    function openDmaicModal() { document.getElementById('modalDmaic').classList.remove('hidden'); }
+    function closeDmaicModal() { document.getElementById('modalDmaic').classList.add('hidden'); }
 
-        function saveEquipement(e) {
-            e.preventDefault();
-            const newEq = {
-                id: Date.now(),
-                nom: document.getElementById('eqNom').value,
-                zone: document.getElementById('eqZone').value
-            };
-            dataEquipements.push(newEq);
-            saveDataLocally();
-            closeEquipementModal();
-            renderEquipements();
-        }
+    function saveDmaic(e) {
+        e.preventDefault();
+        const newProj = {
+            id: Date.now(),
+            titre: document.getElementById('dmaicTitre').value,
+            cible: document.getElementById('dmaicCible').value,
+            etape: document.getElementById('dmaicEtape').value,
+            objectif: document.getElementById('dmaicObjectif').value,
+            progression: 20
+        };
+        dataDmaic.push(newProj);
+        localStorage.setItem('DATA_DMAIC', JSON.stringify(dataDmaic));
+        renderDmaic();
+        closeDmaicModal();
+    }
 
-        function deleteEquipement(id) {
-            if (confirm("Supprimer cet équipement et ses analyses associées ?")) {
-                dataEquipements = dataEquipements.filter(e => e.id !== id);
-                dataAmdec = dataAmdec.filter(a => a.equipementId !== id);
-                saveDataLocally();
-                renderEquipements();
-                renderAMDEC();
-            }
-        }
-
-        // Pareto Chart Implementation
-        function initParetoChart() {
-            const ctx = document.getElementById('paretoChart').getContext('2d');
-            paretoChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: [], datasets: [] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, title: { display: true, text: 'NPR Cumulé' } }
-                    }
-                }
-            });
-        }
-
-        function updateParetoChart() {
-            const type = document.getElementById('paretoFilterType').value;
-            let groupData = {};
-
-            dataAmdec.forEach(item => {
-                const eq = dataEquipements.find(e => e.id === item.equipementId);
-                let key = "Inconnu";
-                if (eq) {
-                    key = type === 'equipement' ? eq.nom : eq.zone;
-                }
-                groupData[key] = (groupData[key] || 0) + item.npr;
-            });
-
-            // Sort descending
-            const sortedKeys = Object.keys(groupData).sort((a, b) => groupData[b] - groupData[a]);
-            const sortedValues = sortedKeys.map(k => groupData[k]);
-
-            paretoChartInstance.data = {
-                labels: sortedKeys,
+    // --- Chart.js Graphs (KPIs) ---
+    function initKpiCharts() {
+        // Graphique Disponibilité
+        new Chart(document.getElementById('kpiDispChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
                 datasets: [{
-                    label: 'NPR Total (Criticité)',
-                    data: sortedValues,
-                    backgroundColor: '#6366f1'
+                    label: 'Taux de Disponibilité (%)',
+                    data: [94.2, 95.8, 93.5, 96.1, 97.4, 98.7],
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    fill: true,
+                    tension: 0.3
                 }]
-            };
-            paretoChartInstance.update();
-        }
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
 
-        // Import & Export Data
-        function exportJSON() {
-            const fullData = { equipements: dataEquipements, amdec: dataAmdec };
-            const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `AMDEC_PRO_DATA_${new Date().toISOString().slice(0, 10)}.json`;
-            a.click();
-        }
+        // Graphique Répartition Arrêts
+        new Chart(document.getElementById('kpiArretChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Panne Mécanique', 'Défaut Électrique', 'Réglages/Changement d\'outil', 'Attente Matière'],
+                datasets: [{
+                    data: [40, 25, 20, 15],
+                    backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+</script>
 
-        function importJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed.equipements && parsed.amdec) {
-                        dataEquipements = parsed.equipements;
-                        dataAmdec = parsed.amdec;
-                        saveDataLocally();
-                        renderDashboard();
-                        renderAMDEC();
-                        renderEquipements();
-                        alert("Données importées avec succès !");
-                    } else {
-                        alert("Format JSON non valide pour AMDEC PRO.");
-                    }
-                } catch (err) {
-                    alert("Erreur lors de la lecture du fichier JSON.");
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function exportCSV() {
-            let csv = "Equipement;Zone;Element;Mode_Defaillance;Effet;Cause;G;O;D;NPR;Criticite;Action\n";
-            dataAmdec.forEach(a => {
-                const eq = dataEquipements.find(e => e.id === a.equipementId);
-                csv += `"${eq ? eq.nom : ''}";"${eq ? eq.zone : ''}";"${a.element}";"${a.mode}";"${a.effet}";"${a.cause}";${a.g};${a.o};${a.d};${a.npr};"${a.criticite}";"${a.action}"\n`;
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `AMDEC_PRO_EXPORT_${new Date().toISOString().slice(0, 10)}.csv`;
-            a.click();
-        }
-    </script>
 </body>
 </html>
