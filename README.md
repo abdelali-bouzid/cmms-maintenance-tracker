@@ -1,4 +1,3 @@
-HTML
 <!DOCTYPE html>
 <html lang="fr" class="h-full bg-slate-100">
 <head>
