@@ -36,7 +36,7 @@
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Adresse Email</label>
                 <div class="relative">
                     <i class="fa-solid fa-envelope absolute left-3 top-3 text-slate-400"></i>
-                    <input type="email" id="loginEmail" required value="admin@usine.com" class="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <input type="email" id="loginEmail" required value="abdelali.bouzid.98@gmail.com" class="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
             </div>
 
