@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLATEFORME INDUSTRIELLE INTÉGRÉE - GMAO | AMDEC | DMAIC | KPIs</title>
+    <title>PLATEFORME INDUSTRIELLE INTÉGRÉE - GMAO | PANNES | AMDEC | DMAIC | KPIs</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome CDN -->
@@ -22,7 +22,7 @@
                 <i class="fa-solid fa-shield-halved text-3xl"></i>
             </div>
             <h2 class="text-2xl font-bold text-slate-900">Plateforme de Maintenance</h2>
-            <p class="text-sm text-slate-500 mt-1">GMAO • AMDEC • DMAIC • KPIs</p>
+            <p class="text-sm text-slate-500 mt-1">GMAO • Pannes • AMDEC • DMAIC • KPIs</p>
         </div>
 
         <div id="loginError" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs rounded-lg flex items-center gap-2">
@@ -89,7 +89,10 @@
 
         <!-- Onglets -->
         <div class="flex border-b border-slate-300 gap-2 overflow-x-auto bg-white p-2 rounded-t-lg shadow-sm">
-            <button onclick="switchTab('kpi')" id="tab-kpi" class="tab-btn px-4 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2">
+            <button onclick="switchTab('pannes')" id="tab-pannes" class="tab-btn px-4 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Saisie Pannes Quotidiennes
+            </button>
+            <button onclick="switchTab('kpi')" id="tab-kpi" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
                 <i class="fa-solid fa-chart-line"></i> KPIs Performance
             </button>
             <button onclick="switchTab('gmao')" id="tab-gmao" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
@@ -103,8 +106,39 @@
             </button>
         </div>
 
-        <!-- 1. SECTION KPIs -->
-        <section id="sec-kpi" class="space-y-6">
+        <!-- 1. SECTION SAISIE DES PANNES QUOTIDIENNES -->
+        <section id="sec-pannes" class="space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center flex-wrap gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-triangle-exclamation text-red-500 mr-2"></i>Journal des Pannes et Incidents Journaliers</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Enregistrez les pannes du jour pour alimenter directement les KPIs et la GMAO.</p>
+                </div>
+                <button onclick="openPanneModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Déclarer une Panne
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-slate-800 text-white uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Équipement</th>
+                            <th class="p-3">Organe / Composant</th>
+                            <th class="p-3">Symptôme / Cause</th>
+                            <th class="p-3">Début - Fin</th>
+                            <th class="p-3">Arrêt (h)</th>
+                            <th class="p-3">Intervenant</th>
+                            <th class="p-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-pannes-body" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 2. SECTION KPIs -->
+        <section id="sec-kpi" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-industry text-indigo-600 text-lg"></i>
@@ -132,13 +166,13 @@
                     <div class="text-3xl font-extrabold text-blue-600 mt-2" id="kpiDisp">-- %</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <div class="text-xs font-bold text-slate-400 uppercase">Nombre de Pannes</div>
+                    <div class="text-xs font-bold text-slate-400 uppercase">Nombre de Pannes Registrées</div>
                     <div class="text-3xl font-extrabold text-red-600 mt-2" id="kpiPannes">--</div>
                 </div>
             </div>
         </section>
 
-        <!-- 2. SECTION GMAO -->
+        <!-- 3. SECTION GMAO -->
         <section id="sec-gmao" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-list-check text-indigo-600 mr-2"></i>Ordres de Travail (OT)</h2>
@@ -165,7 +199,7 @@
             </div>
         </section>
 
-        <!-- 3. SECTION AMDEC -->
+        <!-- 4. SECTION AMDEC -->
         <section id="sec-amdec" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-shield-halved text-indigo-600 mr-2"></i>Analyse AMDEC</h2>
@@ -192,7 +226,7 @@
             </div>
         </section>
 
-        <!-- 4. SECTION DMAIC -->
+        <!-- 5. SECTION DMAIC -->
         <section id="sec-dmaic" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-diagram-project text-indigo-600 mr-2"></i>Projets DMAIC</h2>
@@ -206,7 +240,62 @@
     </main>
 </div>
 
-<!-- MODAL OT (Ajout / Édition) -->
+<!-- MODAL SAISIE PANNE -->
+<div id="modalPanne" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="bg-red-700 text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold" id="modalPanneTitle">Déclarer une Panne</h3>
+            <button onclick="closePanneModal()" class="text-slate-200 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form onsubmit="savePanne(event)" class="p-6 space-y-3">
+            <input type="hidden" id="panneIndex">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
+                <input type="date" id="panneDate" required class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Équipement</label>
+                <select id="panneEquipement" class="w-full border rounded p-2 text-sm outline-none bg-white">
+                    <option value="Presse Hydraulique P-01">Presse Hydraulique P-01</option>
+                    <option value="Moteur Principal M-02">Moteur Principal M-02</option>
+                    <option value="Ligne d'Extrusion B-02">Ligne d'Extrusion B-02</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Organe / Composant touché</label>
+                <input type="text" id="panneOrgane" placeholder="Ex: Vérin, Roulement, Capteur..." required class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Symptôme / Description Panne</label>
+                <textarea id="panneCause" required rows="2" placeholder="Ex: Fuite d'huile, surchauffe..." class="w-full border rounded p-2 text-sm outline-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Heure Début</label>
+                    <input type="time" id="panneDebut" onchange="calcPanneDuree()" required class="w-full border rounded p-2 text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Heure Fin</label>
+                    <input type="time" id="panneFin" onchange="calcPanneDuree()" required class="w-full border rounded p-2 text-sm outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Durée d'arrêt (heures)</label>
+                <input type="number" step="0.1" id="panneDuree" required class="w-full border rounded p-2 text-sm outline-none bg-slate-50">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Technicien / Intervenant</label>
+                <input type="text" id="panneIntervenant" required class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t">
+                <button type="button" onclick="closePanneModal()" class="px-4 py-2 border rounded text-sm font-semibold text-slate-600">Annuler</button>
+                <button type="submit" class="px-5 py-2 bg-red-600 text-white rounded text-sm font-semibold">Enregistrer la Panne</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL OT -->
 <div id="modalOt" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
         <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
@@ -336,19 +425,22 @@
     </div>
 </div>
 
-<!-- SCRIPTS JAVASCRIPT ET LOGIQUE SÉCURISÉE DE MODIFICATION / SUPPRESSION -->
+<!-- JAVASCRIPT ET LOGIQUE METIER DYNAMIQUE -->
 <script>
     const HEURES_OUVERTURE_MENSUEL = 160;
     let loginAttempts = 0;
     const MAX_ATTEMPTS = 5;
-    let lastActivityTime = Date.now();
-    const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
 
-    // Données stockées localement
+    // Data Store avec LocalStorage
+    let dataPannes = JSON.parse(localStorage.getItem('DATA_PANNES')) || [
+        { date: '2026-03-01', equipement: 'Presse Hydraulique P-01', organe: 'Vérin principal', cause: 'Fuite d\'huile au joint', debut: '08:30', fin: '12:00', duree: 3.5, intervenant: 'Karim' },
+        { date: '2026-03-02', equipement: 'Moteur Principal M-02', organe: 'Roulement arrière', cause: 'Surchauffe et vibration', debut: '14:00', fin: '16:00', duree: 2.0, intervenant: 'Hassan' }
+    ];
+
     let dataOt = JSON.parse(localStorage.getItem('DATA_OT')) || [
-        { id: 'OT-1001', equipement: 'Presse Hydraulique P-01', type: 'Correctif', duree: 3.5, desc: 'Fuite d\'huile vérin principal', priorite: 'Haute' },
-        { id: 'OT-1002', equipement: 'Presse Hydraulique P-01', type: 'Correctif', duree: 1.5, desc: 'Remplacement distributeur', priorite: 'Haute' },
-        { id: 'OT-1003', equipement: 'Moteur Principal M-02', type: 'Correctif', duree: 2.0, desc: 'Surchauffe roulement', priorite: 'Moyenne' }
+        { id: 'OT-1001', equipement: 'Presse Hydraulique P-01', type: 'Correctif', duree: 3.5, desc: 'Fuite d\'huile au joint', priorite: 'Haute' },
+        { id: 'OT-1002', equipement: 'Moteur Principal M-02', type: 'Correctif', duree: 2.0, desc: 'Surchauffe et vibration', priorite: 'Moyenne' },
+        { id: 'OT-1003', equipement: 'Ligne d\'Extrusion B-02', type: 'Préventif', duree: 4.0, desc: 'Vidange et graissage mensuel', priorite: 'Basse' }
     ];
 
     let dataAmdec = JSON.parse(localStorage.getItem('DATA_AMDEC')) || [
@@ -362,20 +454,11 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         checkSession();
+        renderPannes();
         renderOt();
         renderAmdec();
         renderDmaic();
         updateKpiDashboard();
-
-        ['click', 'mousemove', 'keypress', 'scroll'].forEach(evt => {
-            document.addEventListener(evt, () => lastActivityTime = Date.now(), false);
-        });
-        setInterval(() => {
-            if (sessionStorage.getItem('SESSION_USER') && (Date.now() - lastActivityTime > INACTIVITY_TIMEOUT)) {
-                alert("Session expirée pour inactivité.");
-                handleLogout();
-            }
-        }, 30000);
     });
 
     function sanitizeInput(str) {
@@ -398,7 +481,6 @@
 
     function handleLogin(e) {
         e.preventDefault();
-        if (loginAttempts >= MAX_ATTEMPTS) return;
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         const role = document.getElementById('loginRole').value;
@@ -432,7 +514,7 @@
     }
 
     function switchTab(tab) {
-        ['kpi', 'gmao', 'amdec', 'dmaic'].forEach(t => {
+        ['pannes', 'kpi', 'gmao', 'amdec', 'dmaic'].forEach(t => {
             document.getElementById(`sec-${t}`).classList.add('hidden');
             document.getElementById(`tab-${t}`).classList.remove('text-indigo-600', 'border-indigo-600');
             document.getElementById(`tab-${t}`).classList.add('text-slate-600', 'border-transparent');
@@ -441,13 +523,132 @@
         document.getElementById(`tab-${tab}`).classList.add('text-indigo-600', 'border-indigo-600');
     }
 
+    /* --- GESTION DES PANNES (SAISIE JOURNALIÈRE) --- */
+    function renderPannes() {
+        const tbody = document.getElementById('table-pannes-body');
+        tbody.innerHTML = '';
+        dataPannes.forEach((p, idx) => {
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-semibold">${sanitizeInput(p.date)}</td>
+                    <td class="p-3 font-bold text-slate-800">${sanitizeInput(p.equipement)}</td>
+                    <td class="p-3 text-indigo-700 font-medium">${sanitizeInput(p.organe)}</td>
+                    <td class="p-3 text-slate-600">${sanitizeInput(p.cause)}</td>
+                    <td class="p-3 text-xs">${sanitizeInput(p.debut)} - ${sanitizeInput(p.fin)}</td>
+                    <td class="p-3 font-bold text-red-600">${p.duree} h</td>
+                    <td class="p-3 text-slate-700">${sanitizeInput(p.intervenant)}</td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="editPanne(${idx})" class="text-indigo-600 hover:text-indigo-900"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deletePanne(${idx})" class="text-red-600 hover:text-red-900"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function openPanneModal() {
+        document.getElementById('panneIndex').value = '';
+        document.getElementById('panneDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('panneOrgane').value = '';
+        document.getElementById('panneCause').value = '';
+        document.getElementById('panneDebut').value = '08:00';
+        document.getElementById('panneFin').value = '09:00';
+        document.getElementById('panneDuree').value = '1.0';
+        document.getElementById('panneIntervenant').value = '';
+        document.getElementById('modalPanneTitle').textContent = 'Déclarer une Panne';
+        document.getElementById('modalPanne').classList.remove('hidden');
+    }
+
+    function closePanneModal() { document.getElementById('modalPanne').classList.add('hidden'); }
+
+    function calcPanneDuree() {
+        const debut = document.getElementById('panneDebut').value;
+        const fin = document.getElementById('panneFin').value;
+        if (debut && fin) {
+            const [h1, m1] = debut.split(':').map(Number);
+            const [h2, m2] = fin.split(':').map(Number);
+            let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (diff < 0) diff += 24 * 60;
+            document.getElementById('panneDuree').value = (diff / 60).toFixed(1);
+        }
+    }
+
+    function editPanne(index) {
+        const p = dataPannes[index];
+        document.getElementById('panneIndex').value = index;
+        document.getElementById('panneDate').value = p.date;
+        document.getElementById('panneEquipement').value = p.equipement;
+        document.getElementById('panneOrgane').value = p.organe;
+        document.getElementById('panneCause').value = p.cause;
+        document.getElementById('panneDebut').value = p.debut;
+        document.getElementById('panneFin').value = p.fin;
+        document.getElementById('panneDuree').value = p.duree;
+        document.getElementById('panneIntervenant').value = p.intervenant;
+        document.getElementById('modalPanneTitle').textContent = 'Modifier la Panne';
+        document.getElementById('modalPanne').classList.remove('hidden');
+    }
+
+    function deletePanne(index) {
+        if (confirm("Supprimer cette panne ? (Cela mettra à jour les KPIs)")) {
+            dataPannes.splice(index, 1);
+            saveData('DATA_PANNES', dataPannes);
+            renderPannes();
+            updateKpiDashboard();
+        }
+    }
+
+    function savePanne(e) {
+        e.preventDefault();
+        const idx = document.getElementById('panneIndex').value;
+        const equipement = sanitizeInput(document.getElementById('panneEquipement').value);
+        const duree = parseFloat(document.getElementById('panneDuree').value);
+        const cause = sanitizeInput(document.getElementById('panneCause').value);
+
+        const obj = {
+            date: sanitizeInput(document.getElementById('panneDate').value),
+            equipement: equipement,
+            organe: sanitizeInput(document.getElementById('panneOrgane').value),
+            cause: cause,
+            debut: sanitizeInput(document.getElementById('panneDebut').value),
+            fin: sanitizeInput(document.getElementById('panneFin').value),
+            duree: duree,
+            intervenant: sanitizeInput(document.getElementById('panneIntervenant').value)
+        };
+
+        if (idx !== '') {
+            dataPannes[idx] = obj;
+        } else {
+            dataPannes.push(obj);
+            // Synchronisation automatique : Créer un OT correctif dans la GMAO pour cette panne
+            dataOt.push({
+                id: 'OT-' + (1000 + dataOt.length + 1),
+                equipement: equipement,
+                type: 'Correctif',
+                duree: duree,
+                desc: cause,
+                priorite: 'Haute'
+            });
+            saveData('DATA_OT', dataOt);
+            renderOt();
+        }
+
+        saveData('DATA_PANNES', dataPannes);
+        renderPannes();
+        updateKpiDashboard();
+        closePanneModal();
+    }
+
+    /* --- CALCUL KPIs DYNAMIQUES DEPUIS LES PANNES --- */
     function updateKpiDashboard() {
         const selectedMachine = document.getElementById('selectMachineKpi').value;
-        let filtered = dataOt.filter(ot => ot.type === 'Correctif');
-        if (selectedMachine !== 'ALL') filtered = filtered.filter(ot => ot.equipement === selectedMachine);
+        let filteredPannes = dataPannes;
+        
+        if (selectedMachine !== 'ALL') {
+            filteredPannes = filteredPannes.filter(p => p.equipement === selectedMachine);
+        }
 
-        const pannes = filtered.length;
-        if (pannes === 0) {
+        const nombrePannes = filteredPannes.length;
+        if (nombrePannes === 0) {
             document.getElementById('kpiMtbf').textContent = `${HEURES_OUVERTURE_MENSUEL} hrs`;
             document.getElementById('kpiMttr').textContent = `0 hrs`;
             document.getElementById('kpiDisp').textContent = `100 %`;
@@ -455,18 +656,20 @@
             return;
         }
 
-        const arret = filtered.reduce((s, ot) => s + (parseFloat(ot.duree) || 0), 0);
-        const mtbf = ((HEURES_OUVERTURE_MENSUEL - arret) / pannes).toFixed(1);
-        const mttr = (arret / pannes).toFixed(1);
+        const tempsTotalArret = filteredPannes.reduce((s, p) => s + (parseFloat(p.duree) || 0), 0);
+        const tempsFonctionnement = HEURES_OUVERTURE_MENSUEL - tempsTotalArret;
+
+        const mtbf = (tempsFonctionnement / nombrePannes).toFixed(1);
+        const mttr = (tempsTotalArret / nombrePannes).toFixed(1);
         const disp = ((parseFloat(mtbf) / (parseFloat(mtbf) + parseFloat(mttr))) * 100).toFixed(2);
 
         document.getElementById('kpiMtbf').textContent = `${mtbf} hrs`;
         document.getElementById('kpiMttr').textContent = `${mttr} hrs`;
         document.getElementById('kpiDisp').textContent = `${disp} %`;
-        document.getElementById('kpiPannes').textContent = pannes;
+        document.getElementById('kpiPannes').textContent = nombrePannes;
     }
 
-    /* --- GESTION DES OT (CRUD) --- */
+    /* --- GESTION GMAO (OT) --- */
     function renderOt() {
         const tbody = document.getElementById('table-ot-body');
         tbody.innerHTML = '';
@@ -492,7 +695,7 @@
         document.getElementById('otIndex').value = '';
         document.getElementById('otDuree').value = '1.0';
         document.getElementById('otDesc').value = '';
-        document.getElementById('modalOtTitle').textContent = 'Ajouter un Ordre de Travail';
+        document.getElementById('modalOtTitle').textContent = 'Ajouter un OT';
         document.getElementById('modalOt').classList.remove('hidden');
     }
     function closeOtModal() { document.getElementById('modalOt').classList.add('hidden'); }
@@ -505,16 +708,15 @@
         document.getElementById('otDuree').value = ot.duree;
         document.getElementById('otDesc').value = ot.desc;
         document.getElementById('otPriorite').value = ot.priorite;
-        document.getElementById('modalOtTitle').textContent = 'Modifier l\'Ordre de Travail';
+        document.getElementById('modalOtTitle').textContent = 'Modifier OT';
         document.getElementById('modalOt').classList.remove('hidden');
     }
 
     function deleteOt(index) {
-        if (confirm("Voulez-vous vraiment supprimer cet OT ?")) {
+        if (confirm("Supprimer cet OT ?")) {
             dataOt.splice(index, 1);
             saveData('DATA_OT', dataOt);
             renderOt();
-            updateKpiDashboard();
         }
     }
 
@@ -529,17 +731,13 @@
             desc: sanitizeInput(document.getElementById('otDesc').value),
             priorite: sanitizeInput(document.getElementById('otPriorite').value)
         };
-
-        if (idx !== '') dataOt[idx] = obj;
-        else dataOt.push(obj);
-
+        if (idx !== '') dataOt[idx] = obj; else dataOt.push(obj);
         saveData('DATA_OT', dataOt);
         renderOt();
-        updateKpiDashboard();
         closeOtModal();
     }
 
-    /* --- GESTION AMDEC (CRUD) --- */
+    /* --- AMDEC & DMAIC RENDERS --- */
     function renderAmdec() {
         const tbody = document.getElementById('table-amdec-body');
         tbody.innerHTML = '';
@@ -564,13 +762,7 @@
 
     function openAmdecModal() {
         document.getElementById('amdecIndex').value = '';
-        document.getElementById('amdecEquipement').value = '';
-        document.getElementById('amdecMode').value = '';
-        document.getElementById('amdecG').value = '1';
-        document.getElementById('amdecO').value = '1';
-        document.getElementById('amdecD').value = '1';
-        document.getElementById('amdecAction').value = '';
-        document.getElementById('modalAmdecTitle').textContent = 'Ajouter une ligne AMDEC';
+        document.getElementById('modalAmdecTitle').textContent = 'Ajouter ligne AMDEC';
         document.getElementById('modalAmdec').classList.remove('hidden');
     }
     function closeAmdecModal() { document.getElementById('modalAmdec').classList.add('hidden'); }
@@ -584,12 +776,11 @@
         document.getElementById('amdecO').value = a.o;
         document.getElementById('amdecD').value = a.d;
         document.getElementById('amdecAction').value = a.action;
-        document.getElementById('modalAmdecTitle').textContent = 'Modifier ligne AMDEC';
         document.getElementById('modalAmdec').classList.remove('hidden');
     }
 
     function deleteAmdec(index) {
-        if (confirm("Supprimer cette entrée AMDEC ?")) {
+        if (confirm("Supprimer cette ligne AMDEC ?")) {
             dataAmdec.splice(index, 1);
             saveData('DATA_AMDEC', dataAmdec);
             renderAmdec();
@@ -602,23 +793,18 @@
         const g = parseInt(document.getElementById('amdecG').value);
         const o = parseInt(document.getElementById('amdecO').value);
         const d = parseInt(document.getElementById('amdecD').value);
-
         const obj = {
             equipement: sanitizeInput(document.getElementById('amdecEquipement').value),
             mode: sanitizeInput(document.getElementById('amdecMode').value),
             g: g, o: o, d: d, npr: g * o * d,
             action: sanitizeInput(document.getElementById('amdecAction').value)
         };
-
-        if (idx !== '') dataAmdec[idx] = obj;
-        else dataAmdec.push(obj);
-
+        if (idx !== '') dataAmdec[idx] = obj; else dataAmdec.push(obj);
         saveData('DATA_AMDEC', dataAmdec);
         renderAmdec();
         closeAmdecModal();
     }
 
-    /* --- GESTION DMAIC (CRUD) --- */
     function renderDmaic() {
         const container = document.getElementById('dmaic-projects-container');
         container.innerHTML = '';
@@ -644,9 +830,6 @@
 
     function openDmaicModal() {
         document.getElementById('dmaicIndex').value = '';
-        document.getElementById('dmaicTitre').value = '';
-        document.getElementById('dmaicObjectif').value = '';
-        document.getElementById('dmaicProgression').value = '0';
         document.getElementById('modalDmaicTitle').textContent = 'Ajouter Projet DMAIC';
         document.getElementById('modalDmaic').classList.remove('hidden');
     }
@@ -659,7 +842,6 @@
         document.getElementById('dmaicEtape').value = d.etape;
         document.getElementById('dmaicObjectif').value = d.objectif;
         document.getElementById('dmaicProgression').value = d.progression;
-        document.getElementById('modalDmaicTitle').textContent = 'Modifier Projet DMAIC';
         document.getElementById('modalDmaic').classList.remove('hidden');
     }
 
@@ -680,10 +862,7 @@
             objectif: sanitizeInput(document.getElementById('dmaicObjectif').value),
             progression: parseInt(document.getElementById('dmaicProgression').value)
         };
-
-        if (idx !== '') dataDmaic[idx] = obj;
-        else dataDmaic.push(obj);
-
+        if (idx !== '') dataDmaic[idx] = obj; else dataDmaic.push(obj);
         saveData('DATA_DMAIC', dataDmaic);
         renderDmaic();
         closeDmaicModal();
