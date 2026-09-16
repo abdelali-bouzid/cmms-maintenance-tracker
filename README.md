@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLATEFORME INDUSTRIELLE INTÉGRÉE - GMAO | PANNES | AMDEC | DMAIC | KPIs</title>
+    <title>PLATEFORME INDUSTRIELLE INTÉGRÉE - GMAO | PANNES | ZONES & ÉQUIPEMENTS | KPIs</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome CDN -->
@@ -22,7 +22,7 @@
                 <i class="fa-solid fa-shield-halved text-3xl"></i>
             </div>
             <h2 class="text-2xl font-bold text-slate-900">Plateforme de Maintenance</h2>
-            <p class="text-sm text-slate-500 mt-1">GMAO • Pannes • AMDEC • DMAIC • KPIs</p>
+            <p class="text-sm text-slate-500 mt-1">GMAO • Pannes • Zones • AMDEC • DMAIC • KPIs</p>
         </div>
 
         <div id="loginError" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs rounded-lg flex items-center gap-2">
@@ -90,13 +90,16 @@
         <!-- Onglets -->
         <div class="flex border-b border-slate-300 gap-2 overflow-x-auto bg-white p-2 rounded-t-lg shadow-sm">
             <button onclick="switchTab('pannes')" id="tab-pannes" class="tab-btn px-4 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2">
-                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Saisie Pannes Quotidiennes
+                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Saisie Pannes
+            </button>
+            <button onclick="switchTab('equipements')" id="tab-equipements" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
+                <i class="fa-solid fa-industry text-blue-500"></i> Zones & Équipements
             </button>
             <button onclick="switchTab('kpi')" id="tab-kpi" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
                 <i class="fa-solid fa-chart-line"></i> KPIs Performance
             </button>
             <button onclick="switchTab('gmao')" id="tab-gmao" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
-                <i class="fa-solid fa-wrench"></i> GMAO (Ordres de Travail)
+                <i class="fa-solid fa-wrench"></i> GMAO (OT)
             </button>
             <button onclick="switchTab('amdec')" id="tab-amdec" class="tab-btn px-4 py-2 font-semibold text-slate-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2">
                 <i class="fa-solid fa-shield-halved"></i> Analyse AMDEC
@@ -110,8 +113,8 @@
         <section id="sec-pannes" class="space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center flex-wrap gap-3">
                 <div>
-                    <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-triangle-exclamation text-red-500 mr-2"></i>Journal des Pannes et Incidents Journaliers</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Enregistrez les pannes du jour pour alimenter directement les KPIs et la GMAO.</p>
+                    <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-triangle-exclamation text-red-500 mr-2"></i>Journal des Pannes Journalières</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Saisissez les pannes quotidiennes pour mettre à jour les KPIs et la GMAO.</p>
                 </div>
                 <button onclick="openPanneModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Déclarer une Panne
@@ -137,18 +140,54 @@
             </div>
         </section>
 
-        <!-- 2. SECTION KPIs -->
+        <!-- 2. SECTION GESTION DES ZONES ET ÉQUIPEMENTS (NOUVEAU) -->
+        <section id="sec-equipements" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Management Zones -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800"><i class="fa-solid fa-layer-group text-indigo-600 mr-2"></i>Zones de Production</h3>
+                        <button onclick="openZoneModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-semibold">
+                            <i class="fa-solid fa-plus mr-1"></i> Ajouter Zone
+                        </button>
+                    </div>
+                    <ul id="list-zones" class="divide-y divide-slate-100 text-sm"></ul>
+                </div>
+
+                <!-- Management Équipements -->
+                <div class="md:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800"><i class="fa-solid fa-plug text-indigo-600 mr-2"></i>Parc d'Équipements & Machines</h3>
+                        <button onclick="openEquipementModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-sm font-semibold">
+                            <i class="fa-solid fa-plus mr-1"></i> Ajouter une Machine
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-100 uppercase text-xs text-slate-600">
+                                <tr>
+                                    <th class="p-2">Code</th>
+                                    <th class="p-2">Nom Équipement</th>
+                                    <th class="p-2">Zone</th>
+                                    <th class="p-2">Statut</th>
+                                    <th class="p-2 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-equipements-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. SECTION KPIs -->
         <section id="sec-kpi" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-industry text-indigo-600 text-lg"></i>
                     <label class="font-bold text-slate-700 text-sm">Sélectionner un équipement :</label>
                 </div>
-                <select id="selectMachineKpi" onchange="updateKpiDashboard()" class="border rounded-lg p-2 text-sm bg-slate-50 border-slate-300 outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="ALL">Toutes les machines (Total Usine)</option>
-                    <option value="Presse Hydraulique P-01">Presse Hydraulique P-01</option>
-                    <option value="Moteur Principal M-02">Moteur Principal M-02</option>
-                    <option value="Ligne d'Extrusion B-02">Ligne d'Extrusion B-02</option>
+                <select id="selectMachineKpi" onchange="updateKpiDashboard()" class="select-equipements border rounded-lg p-2 text-sm bg-slate-50 border-slate-300 outline-none focus:ring-2 focus:ring-indigo-500">
                 </select>
             </div>
 
@@ -172,7 +211,7 @@
             </div>
         </section>
 
-        <!-- 3. SECTION GMAO -->
+        <!-- 4. SECTION GMAO -->
         <section id="sec-gmao" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-list-check text-indigo-600 mr-2"></i>Ordres de Travail (OT)</h2>
@@ -199,7 +238,7 @@
             </div>
         </section>
 
-        <!-- 4. SECTION AMDEC -->
+        <!-- 5. SECTION AMDEC -->
         <section id="sec-amdec" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-shield-halved text-indigo-600 mr-2"></i>Analyse AMDEC</h2>
@@ -226,7 +265,7 @@
             </div>
         </section>
 
-        <!-- 5. SECTION DMAIC -->
+        <!-- 6. SECTION DMAIC -->
         <section id="sec-dmaic" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                 <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-diagram-project text-indigo-600 mr-2"></i>Projets DMAIC</h2>
@@ -240,7 +279,7 @@
     </main>
 </div>
 
-<!-- MODAL SAISIE PANNE -->
+<!-- MODAL PANNE -->
 <div id="modalPanne" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
         <div class="bg-red-700 text-white px-6 py-4 flex justify-between items-center">
@@ -255,10 +294,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Équipement</label>
-                <select id="panneEquipement" class="w-full border rounded p-2 text-sm outline-none bg-white">
-                    <option value="Presse Hydraulique P-01">Presse Hydraulique P-01</option>
-                    <option value="Moteur Principal M-02">Moteur Principal M-02</option>
-                    <option value="Ligne d'Extrusion B-02">Ligne d'Extrusion B-02</option>
+                <select id="panneEquipement" class="select-equipements w-full border rounded p-2 text-sm outline-none bg-white" required>
                 </select>
             </div>
             <div>
@@ -266,7 +302,7 @@
                 <input type="text" id="panneOrgane" placeholder="Ex: Vérin, Roulement, Capteur..." required class="w-full border rounded p-2 text-sm outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Symptôme / Description Panne</label>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Symptôme / Cause Panne</label>
                 <textarea id="panneCause" required rows="2" placeholder="Ex: Fuite d'huile, surchauffe..." class="w-full border rounded p-2 text-sm outline-none"></textarea>
             </div>
             <div class="grid grid-cols-2 gap-2">
@@ -295,6 +331,64 @@
     </div>
 </div>
 
+<!-- MODAL ZONE (NOUVEAU) -->
+<div id="modalZone" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+        <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold">Ajouter Zone de Production</h3>
+            <button onclick="closeZoneModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form onsubmit="saveZone(event)" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nom de la Zone</label>
+                <input type="text" id="zoneNom" required placeholder="Ex: Zone de Moulage, Ligne B..." class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t">
+                <button type="button" onclick="closeZoneModal()" class="px-4 py-2 border rounded text-sm font-semibold text-slate-600">Annuler</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded text-sm font-semibold">Ajouter Zone</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL ÉQUIPEMENT (NOUVEAU) -->
+<div id="modalEquipement" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold" id="modalEquipementTitle">Ajouter une Machine</h3>
+            <button onclick="closeEquipementModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form onsubmit="saveEquipement(event)" class="p-6 space-y-4">
+            <input type="hidden" id="equipementIndex">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Code Équipement / ID</label>
+                <input type="text" id="eqCode" required placeholder="Ex: P-01, M-02..." class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nom de l'Équipement</label>
+                <input type="text" id="eqNom" required placeholder="Ex: Presse Hydraulique 50T..." class="w-full border rounded p-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Zone de Production Associated</label>
+                <select id="eqZone" class="w-full border rounded p-2 text-sm outline-none bg-white" required>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Statut Opérationnel</label>
+                <select id="eqStatut" class="w-full border rounded p-2 text-sm outline-none bg-white">
+                    <option value="Opérationnel">Opérationnel</option>
+                    <option value="En Panne">En Panne</option>
+                    <option value="En Maintenance">En Maintenance</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t">
+                <button type="button" onclick="closeEquipementModal()" class="px-4 py-2 border rounded text-sm font-semibold text-slate-600">Annuler</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded text-sm font-semibold">Enregistrer Équipement</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- MODAL OT -->
 <div id="modalOt" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
@@ -306,10 +400,7 @@
             <input type="hidden" id="otIndex">
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Équipement</label>
-                <select id="otEquipement" class="w-full border rounded p-2 text-sm outline-none">
-                    <option value="Presse Hydraulique P-01">Presse Hydraulique P-01</option>
-                    <option value="Moteur Principal M-02">Moteur Principal M-02</option>
-                    <option value="Ligne d'Extrusion B-02">Ligne d'Extrusion B-02</option>
+                <select id="otEquipement" class="select-equipements w-full border rounded p-2 text-sm outline-none" required>
                 </select>
             </div>
             <div>
@@ -354,7 +445,8 @@
             <input type="hidden" id="amdecIndex">
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Équipement</label>
-                <input type="text" id="amdecEquipement" required class="w-full border rounded p-2 text-sm outline-none">
+                <select id="amdecEquipement" class="select-equipements w-full border rounded p-2 text-sm outline-none" required>
+                </select>
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mode de Défaillance</label>
@@ -425,13 +517,19 @@
     </div>
 </div>
 
-<!-- JAVASCRIPT ET LOGIQUE METIER DYNAMIQUE -->
+<!-- JAVASCRIPT ET LOGIQUE DYNAMIQUE MODIFIÉE -->
 <script>
     const HEURES_OUVERTURE_MENSUEL = 160;
-    let loginAttempts = 0;
-    const MAX_ATTEMPTS = 5;
 
-    // Data Store avec LocalStorage
+    // DATA STORES DYNAMIQUES
+    let dataZones = JSON.parse(localStorage.getItem('DATA_ZONES')) || ['Zone Usinage', 'Ligne d\'Assemblage', 'Atelier Extrusion'];
+
+    let dataEquipements = JSON.parse(localStorage.getItem('DATA_EQUIPEMENTS')) || [
+        { code: 'P-01', nom: 'Presse Hydraulique P-01', zone: 'Zone Usinage', statut: 'Opérationnel' },
+        { code: 'M-02', nom: 'Moteur Principal M-02', zone: 'Zone Usinage', statut: 'Opérationnel' },
+        { code: 'B-02', nom: 'Ligne d\'Extrusion B-02', zone: 'Atelier Extrusion', statut: 'Opérationnel' }
+    ];
+
     let dataPannes = JSON.parse(localStorage.getItem('DATA_PANNES')) || [
         { date: '2026-03-01', equipement: 'Presse Hydraulique P-01', organe: 'Vérin principal', cause: 'Fuite d\'huile au joint', debut: '08:30', fin: '12:00', duree: 3.5, intervenant: 'Karim' },
         { date: '2026-03-02', equipement: 'Moteur Principal M-02', organe: 'Roulement arrière', cause: 'Surchauffe et vibration', debut: '14:00', fin: '16:00', duree: 2.0, intervenant: 'Hassan' }
@@ -444,8 +542,8 @@
     ];
 
     let dataAmdec = JSON.parse(localStorage.getItem('DATA_AMDEC')) || [
-        { equipement: 'P-01', mode: 'Fuite d\'huile', g: 6, o: 5, d: 4, npr: 120, action: 'Remplacement préventif des joints' },
-        { equipement: 'M-02', mode: 'Grippage roulement', g: 8, o: 3, d: 3, npr: 72, action: 'Plan de graissage hebdomadaire' }
+        { equipement: 'Presse Hydraulique P-01', mode: 'Fuite d\'huile', g: 6, o: 5, d: 4, npr: 120, action: 'Remplacement préventif des joints' },
+        { equipement: 'Moteur Principal M-02', mode: 'Grippage roulement', g: 8, o: 3, d: 3, npr: 72, action: 'Plan de graissage hebdomadaire' }
     ];
 
     let dataDmaic = JSON.parse(localStorage.getItem('DATA_DMAIC')) || [
@@ -454,6 +552,9 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         checkSession();
+        updateEquipementDropdowns();
+        renderZones();
+        renderEquipements();
         renderPannes();
         renderOt();
         renderAmdec();
@@ -482,17 +583,9 @@
     function handleLogin(e) {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
         const role = document.getElementById('loginRole').value;
-
-        if (password === "123456") {
-            loginAttempts = 0;
-            sessionStorage.setItem('SESSION_USER', JSON.stringify({ email: sanitizeInput(email), role: sanitizeInput(role) }));
-            checkSession();
-        } else {
-            loginAttempts++;
-            document.getElementById('loginError').classList.remove('hidden');
-        }
+        sessionStorage.setItem('SESSION_USER', JSON.stringify({ email: sanitizeInput(email), role: sanitizeInput(role) }));
+        checkSession();
     }
 
     function handleLogout() {
@@ -514,7 +607,7 @@
     }
 
     function switchTab(tab) {
-        ['pannes', 'kpi', 'gmao', 'amdec', 'dmaic'].forEach(t => {
+        ['pannes', 'equipements', 'kpi', 'gmao', 'amdec', 'dmaic'].forEach(t => {
             document.getElementById(`sec-${t}`).classList.add('hidden');
             document.getElementById(`tab-${t}`).classList.remove('text-indigo-600', 'border-indigo-600');
             document.getElementById(`tab-${t}`).classList.add('text-slate-600', 'border-transparent');
@@ -523,7 +616,135 @@
         document.getElementById(`tab-${tab}`).classList.add('text-indigo-600', 'border-indigo-600');
     }
 
-    /* --- GESTION DES PANNES (SAISIE JOURNALIÈRE) --- */
+    /* --- SYNCHRONISATION DES LISTES MENTIONS (DROPDOWNS) --- */
+    function updateEquipementDropdowns() {
+        const selects = document.querySelectorAll('.select-equipements');
+        selects.forEach(select => {
+            const isKpiSelect = select.id === 'selectMachineKpi';
+            let html = isKpiSelect ? '<option value="ALL">Toutes les machines (Total Usine)</option>' : '';
+            
+            dataEquipements.forEach(eq => {
+                html += `<option value="${sanitizeInput(eq.nom)}">${sanitizeInput(eq.nom)}</option>`;
+            });
+            select.innerHTML = html;
+        });
+
+        // Update Zone Dropdown in modal
+        const zoneSelect = document.getElementById('eqZone');
+        if(zoneSelect) {
+            let zoneHtml = '';
+            dataZones.forEach(z => {
+                zoneHtml += `<option value="${sanitizeInput(z)}">${sanitizeInput(z)}</option>`;
+            });
+            zoneSelect.innerHTML = zoneHtml;
+        }
+    }
+
+    /* --- GESTION DES ZONES & ÉQUIPEMENTS --- */
+    function renderZones() {
+        const list = document.getElementById('list-zones');
+        list.innerHTML = '';
+        dataZones.forEach((z, idx) => {
+            list.innerHTML += `
+                <li class="py-2.5 flex justify-between items-center">
+                    <span class="font-medium text-slate-700">${sanitizeInput(z)}</span>
+                    <button onclick="deleteZone(${idx})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>
+                </li>
+            `;
+        });
+    }
+
+    function openZoneModal() { document.getElementById('modalZone').classList.remove('hidden'); }
+    function closeZoneModal() { document.getElementById('modalZone').classList.add('hidden'); }
+
+    function saveZone(e) {
+        e.preventDefault();
+        const nom = sanitizeInput(document.getElementById('zoneNom').value);
+        if (nom && !dataZones.includes(nom)) {
+            dataZones.push(nom);
+            saveData('DATA_ZONES', dataZones);
+            renderZones();
+            updateEquipementDropdowns();
+        }
+        closeZoneModal();
+    }
+
+    function deleteZone(idx) {
+        if(confirm("Supprimer cette zone ?")) {
+            dataZones.splice(idx, 1);
+            saveData('DATA_ZONES', dataZones);
+            renderZones();
+            updateEquipementDropdowns();
+        }
+    }
+
+    function renderEquipements() {
+        const tbody = document.getElementById('table-equipements-body');
+        tbody.innerHTML = '';
+        dataEquipements.forEach((eq, idx) => {
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2 font-bold text-indigo-600">${sanitizeInput(eq.code)}</td>
+                    <td class="p-2 font-semibold text-slate-800">${sanitizeInput(eq.nom)}</td>
+                    <td class="p-2 text-slate-600">${sanitizeInput(eq.zone)}</td>
+                    <td class="p-2"><span class="px-2 py-0.5 rounded text-xs ${eq.statut === 'Opérationnel' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${sanitizeInput(eq.statut)}</span></td>
+                    <td class="p-2 text-center space-x-2">
+                        <button onclick="editEquipement(${idx})" class="text-indigo-600 hover:text-indigo-900"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteEquipement(${idx})" class="text-red-600 hover:text-red-900"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function openEquipementModal() {
+        document.getElementById('equipementIndex').value = '';
+        document.getElementById('eqCode').value = '';
+        document.getElementById('eqNom').value = '';
+        document.getElementById('modalEquipementTitle').textContent = 'Ajouter une Machine';
+        document.getElementById('modalEquipement').classList.remove('hidden');
+    }
+
+    function closeEquipementModal() { document.getElementById('modalEquipement').classList.add('hidden'); }
+
+    function editEquipement(idx) {
+        const eq = dataEquipements[idx];
+        document.getElementById('equipementIndex').value = idx;
+        document.getElementById('eqCode').value = eq.code;
+        document.getElementById('eqNom').value = eq.nom;
+        document.getElementById('eqZone').value = eq.zone;
+        document.getElementById('eqStatut').value = eq.statut;
+        document.getElementById('modalEquipementTitle').textContent = 'Modifier la Machine';
+        document.getElementById('modalEquipement').classList.remove('hidden');
+    }
+
+    function saveEquipement(e) {
+        e.preventDefault();
+        const idx = document.getElementById('equipementIndex').value;
+        const obj = {
+            code: sanitizeInput(document.getElementById('eqCode').value),
+            nom: sanitizeInput(document.getElementById('eqNom').value),
+            zone: sanitizeInput(document.getElementById('eqZone').value),
+            statut: sanitizeInput(document.getElementById('eqStatut').value)
+        };
+
+        if (idx !== '') dataEquipements[idx] = obj; else dataEquipements.push(obj);
+        saveData('DATA_EQUIPEMENTS', dataEquipements);
+        renderEquipements();
+        updateEquipementDropdowns();
+        closeEquipementModal();
+    }
+
+    function deleteEquipement(idx) {
+        if(confirm("Supprimer cette machine ?")) {
+            dataEquipements.splice(idx, 1);
+            saveData('DATA_EQUIPEMENTS', dataEquipements);
+            renderEquipements();
+            updateEquipementDropdowns();
+        }
+    }
+
+    /* --- GESTION DES PANNES --- */
     function renderPannes() {
         const tbody = document.getElementById('table-pannes-body');
         tbody.innerHTML = '';
@@ -589,7 +810,7 @@
     }
 
     function deletePanne(index) {
-        if (confirm("Supprimer cette panne ? (Cela mettra à jour les KPIs)")) {
+        if (confirm("Supprimer cette panne ?")) {
             dataPannes.splice(index, 1);
             saveData('DATA_PANNES', dataPannes);
             renderPannes();
@@ -619,7 +840,6 @@
             dataPannes[idx] = obj;
         } else {
             dataPannes.push(obj);
-            // Synchronisation automatique : Créer un OT correctif dans la GMAO pour cette panne
             dataOt.push({
                 id: 'OT-' + (1000 + dataOt.length + 1),
                 equipement: equipement,
@@ -638,7 +858,7 @@
         closePanneModal();
     }
 
-    /* --- CALCUL KPIs DYNAMIQUES DEPUIS LES PANNES --- */
+    /* --- CALCUL KPIs DYNAMIQUES --- */
     function updateKpiDashboard() {
         const selectedMachine = document.getElementById('selectMachineKpi').value;
         let filteredPannes = dataPannes;
@@ -669,7 +889,7 @@
         document.getElementById('kpiPannes').textContent = nombrePannes;
     }
 
-    /* --- GESTION GMAO (OT) --- */
+    /* --- GMAO (OT) --- */
     function renderOt() {
         const tbody = document.getElementById('table-ot-body');
         tbody.innerHTML = '';
