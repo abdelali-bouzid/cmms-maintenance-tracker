@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- En-têtes HTTP recommandés à configurer côté serveur :
+         Content-Security-Policy: default-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com;
+         X-Frame-Options: SAMEORIGIN;
+         X-Content-Type-Options: nosniff;
+    -->
     <title>PLATEFORME INDUSTRIELLE INTÉGRÉE - GMAO | AMDEC | DMAIC | KPIs</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,18 +19,24 @@
 </head>
 <body class="flex flex-col min-h-full text-slate-800">
 
-<!-- ÉCRAN DE CONNEXION (AUTHENTIFICATION) -->
+<!-- ÉCRAN DE CONNEXION (AUTHENTIFICATION SÉCURISÉE) -->
 <div id="auth-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 border border-slate-700">
         <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mb-4">
-                <i class="fa-solid fa-industry text-3xl"></i>
+                <i class="fa-solid fa-shield-halved text-3xl"></i>
             </div>
             <h2 class="text-2xl font-bold text-slate-900">Plateforme de Maintenance</h2>
             <p class="text-sm text-slate-500 mt-1">GMAO • AMDEC • DMAIC • KPIs</p>
         </div>
 
-        <form onsubmit="handleLogin(event)" class="space-y-4">
+        <!-- Alerte d'erreur de sécurité / tentative -->
+        <div id="loginError" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs rounded-lg flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="loginErrorText">Identifiants incorrects.</span>
+        </div>
+
+        <form onsubmit="handleLogin(event)" class="space-y-4" autocomplete="off">
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Adresse Email</label>
                 <input type="email" id="loginEmail" required value="admin@usine.com" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -50,7 +61,7 @@
                 </select>
             </div>
 
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg shadow-lg transition duration-200">
+            <button type="submit" id="btnLogin" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg shadow-lg transition duration-200">
                 <i class="fa-solid fa-right-to-bracket mr-2"></i> Se Connecter
             </button>
         </form>
@@ -134,7 +145,7 @@
                     <div class="text-xs text-slate-500 mt-1">MTBF / (MTBF + MTTR)</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <div class="text-xs font-bold text-slate-400 uppercase">Nombre de Pannes Registrées</div>
+                    <div class="text-xs font-bold text-slate-400 uppercase">Nombre de Pannes Enregistrées</div>
                     <div class="text-3xl font-extrabold text-red-600 mt-2" id="kpiPannes">--</div>
                     <div class="text-xs text-slate-500 mt-1">Ordres de Travail Correctifs</div>
                 </div>
@@ -216,7 +227,7 @@
         <!-- 5. SECTION DMAIC -->
         <section id="sec-dmaic" class="hidden space-y-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-diagram-project text-indigo-600 mr-2"></i>Projets d'Amélioration Continuous (DMAIC)</h2>
+                <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-diagram-project text-indigo-600 mr-2"></i>Projets d'Amélioration Continue (DMAIC)</h2>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="dmaic-projects-container"></div>
         </section>
@@ -271,9 +282,16 @@
     </div>
 </div>
 
-<!-- SCRIPTS JAVASCRIPT -->
+<!-- SCRIPTS JAVASCRIPT & SÉCURITÉ -->
 <script>
     const HEURES_OUVERTURE_MENSUEL = 160;
+    
+    // Variables de sécurité (Rate Limiting)
+    let loginAttempts = 0;
+    const MAX_ATTEMPTS = 5;
+    let lockoutTimer = null;
+    let lastActivityTime = Date.now();
+    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes d'inactivité -> Déconnexion
 
     let dataOt = JSON.parse(localStorage.getItem('DATA_OT')) || [
         { id: 'OT-1001', equipement: 'Presse Hydraulique P-01', type: 'Correctif', duree: 3.5, desc: 'Fuite d\'huile vérin principal', priorite: 'Haute' },
@@ -297,9 +315,22 @@
         renderAmdec();
         renderDmaic();
         updateKpiDashboard();
+
+        // Surveillance de l'inactivité utilisateur
+        ['click', 'mousemove', 'keypress', 'scroll'].forEach(evt => {
+            document.addEventListener(evt, resetInactivityTimer, false);
+        });
+        setInterval(checkInactivity, 30000); // Vérification toutes les 30s
     });
 
-    // Fonction pour afficher / masquer le mot de passe
+    // Fonction de nettoyage XSS (Sanitization)
+    function sanitizeInput(str) {
+        const temp = document.createElement('div');
+        temp.textContent = str;
+        return temp.innerHTML;
+    }
+
+    // Gestion de la visibilité du mot de passe
     function togglePasswordVisibility() {
         const passwordInput = document.getElementById('loginPassword');
         const icon = document.getElementById('togglePasswordIcon');
@@ -312,6 +343,95 @@
             icon.classList.remove('fa-eye-slash');
             icon.classList.add('fa-eye');
         }
+    }
+
+    // Authentification Sécurisée avec Brute-Force Protection
+    function handleLogin(e) {
+        e.preventDefault();
+        
+        if (loginAttempts >= MAX_ATTEMPTS) {
+            showLoginError("Trop de tentatives échouées. Compte temporairement bloqué (30s).");
+            return;
+        }
+
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const role = document.getElementById('loginRole').value;
+
+        // Validation simple du mot de passe (Exemple)
+        if (password === "123456") {
+            loginAttempts = 0;
+            const user = { email: sanitizeInput(email), role: sanitizeInput(role), token: Date.now() };
+            sessionStorage.setItem('SESSION_USER', JSON.stringify(user)); // Utilisation de sessionStorage (plus sûr que localStorage)
+            checkSession();
+        } else {
+            loginAttempts++;
+            if (loginAttempts >= MAX_ATTEMPTS) {
+                document.getElementById('btnLogin').disabled = true;
+                showLoginError("Accès bloqué suite à 5 tentatives échouées. Réessayez dans 30s.");
+                setTimeout(() => {
+                    loginAttempts = 0;
+                    document.getElementById('btnLogin').disabled = false;
+                    hideLoginError();
+                }, 30000);
+            } else {
+                showLoginError(`Mot de passe incorrect. (${MAX_ATTEMPTS - loginAttempts} essais restants)`);
+            }
+        }
+    }
+
+    function showLoginError(msg) {
+        const errDiv = document.getElementById('loginError');
+        document.getElementById('loginErrorText').textContent = msg;
+        errDiv.classList.remove('hidden');
+    }
+
+    function hideLoginError() {
+        document.getElementById('loginError').classList.add('hidden');
+    }
+
+    function handleLogout() {
+        sessionStorage.removeItem('SESSION_USER');
+        checkSession();
+    }
+
+    function checkSession() {
+        const stored = sessionStorage.getItem('SESSION_USER');
+        if (stored) {
+            const user = JSON.parse(stored);
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('userDisplay').textContent = `${user.email} (${user.role})`;
+            resetInactivityTimer();
+        } else {
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('app-screen').classList.add('hidden');
+        }
+    }
+
+    // Gestion du Timeout d'Inactivité
+    function resetInactivityTimer() {
+        lastActivityTime = Date.now();
+    }
+
+    function checkInactivity() {
+        if (sessionStorage.getItem('SESSION_USER')) {
+            if (Date.now() - lastActivityTime > INACTIVITY_TIMEOUT) {
+                alert("Session expirée en raison d'une longue inactivité.");
+                handleLogout();
+            }
+        }
+    }
+
+    function switchTab(tab) {
+        ['kpi', 'gmao', 'docs', 'amdec', 'dmaic'].forEach(t => {
+            document.getElementById(`sec-${t}`).classList.add('hidden');
+            document.getElementById(`tab-${t}`).classList.remove('text-indigo-600', 'border-indigo-600');
+            document.getElementById(`tab-${t}`).classList.add('text-slate-600', 'border-transparent');
+        });
+        document.getElementById(`sec-${tab}`).classList.remove('hidden');
+        document.getElementById(`tab-${tab}`).classList.add('text-indigo-600', 'border-indigo-600');
+        document.getElementById(`tab-${tab}`).classList.remove('text-slate-600', 'border-transparent');
     }
 
     // Calcul dynamique des KPIs
@@ -346,56 +466,19 @@
         document.getElementById('kpiPannes').textContent = nombrePannes;
     }
 
-    // Authentification & Navigation
-    function handleLogin(e) {
-        e.preventDefault();
-        const user = { email: document.getElementById('loginEmail').value, role: document.getElementById('loginRole').value };
-        localStorage.setItem('SESSION_USER', JSON.stringify(user));
-        checkSession();
-    }
-
-    function handleLogout() {
-        localStorage.removeItem('SESSION_USER');
-        checkSession();
-    }
-
-    function checkSession() {
-        const stored = localStorage.getItem('SESSION_USER');
-        if (stored) {
-            const user = JSON.parse(stored);
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('userDisplay').textContent = `${user.email} (${user.role})`;
-        } else {
-            document.getElementById('auth-screen').classList.remove('hidden');
-            document.getElementById('app-screen').classList.add('hidden');
-        }
-    }
-
-    function switchTab(tab) {
-        ['kpi', 'gmao', 'docs', 'amdec', 'dmaic'].forEach(t => {
-            document.getElementById(`sec-${t}`).classList.add('hidden');
-            document.getElementById(`tab-${t}`).classList.remove('text-indigo-600', 'border-indigo-600');
-            document.getElementById(`tab-${t}`).classList.add('text-slate-600', 'border-transparent');
-        });
-        document.getElementById(`sec-${tab}`).classList.remove('hidden');
-        document.getElementById(`tab-${tab}`).classList.add('text-indigo-600', 'border-indigo-600');
-        document.getElementById(`tab-${tab}`).classList.remove('text-slate-600', 'border-transparent');
-    }
-
-    // Affichage des Tables
+    // Affichage des Tables avec Sécurisation des Données
     function renderOt() {
         const tbody = document.getElementById('table-ot-body');
         tbody.innerHTML = '';
         dataOt.forEach(ot => {
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-50">
-                    <td class="p-3 font-bold text-slate-800">${ot.id}</td>
-                    <td class="p-3 font-semibold">${ot.equipement}</td>
-                    <td class="p-3"><span class="px-2 py-0.5 rounded text-xs ${ot.type === 'Correctif' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">${ot.type}</span></td>
+                    <td class="p-3 font-bold text-slate-800">${sanitizeInput(ot.id)}</td>
+                    <td class="p-3 font-semibold">${sanitizeInput(ot.equipement)}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-xs ${ot.type === 'Correctif' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">${sanitizeInput(ot.type)}</span></td>
                     <td class="p-3 font-bold text-slate-700">${ot.duree}</td>
-                    <td class="p-3 text-slate-600">${ot.desc}</td>
-                    <td class="p-3 font-bold text-xs ${ot.priorite === 'Haute' ? 'text-red-600' : 'text-slate-600'}">${ot.priorite}</td>
+                    <td class="p-3 text-slate-600">${sanitizeInput(ot.desc)}</td>
+                    <td class="p-3 font-bold text-xs ${ot.priorite === 'Haute' ? 'text-red-600' : 'text-slate-600'}">${sanitizeInput(ot.priorite)}</td>
                 </tr>
             `;
         });
@@ -407,13 +490,13 @@
         dataAmdec.forEach(item => {
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-50">
-                    <td class="p-3 font-semibold text-slate-800">${item.equipement}</td>
-                    <td class="p-3">${item.mode}</td>
+                    <td class="p-3 font-semibold text-slate-800">${sanitizeInput(item.equipement)}</td>
+                    <td class="p-3">${sanitizeInput(item.mode)}</td>
                     <td class="p-3 text-center">${item.g}</td>
                     <td class="p-3 text-center">${item.o}</td>
                     <td class="p-3 text-center">${item.d}</td>
                     <td class="p-3 text-center font-bold text-red-600">${item.npr}</td>
-                    <td class="p-3 text-slate-600">${item.action}</td>
+                    <td class="p-3 text-slate-600">${sanitizeInput(item.action)}</td>
                 </tr>
             `;
         });
@@ -425,9 +508,9 @@
         dataDmaic.forEach(p => {
             container.innerHTML += `
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                    <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded">Étape ${p.etape}</span>
-                    <h3 class="font-bold text-slate-800 text-lg">${p.titre}</h3>
-                    <p class="text-xs text-slate-500">Objectif: ${p.objectif}</p>
+                    <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded">Étape ${sanitizeInput(p.etape)}</span>
+                    <h3 class="font-bold text-slate-800 text-lg">${sanitizeInput(p.titre)}</h3>
+                    <p class="text-xs text-slate-500">Objectif: ${sanitizeInput(p.objectif)}</p>
                     <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                         <div class="bg-indigo-600 h-full" style="width: ${p.progression}%"></div>
                     </div>
@@ -443,11 +526,11 @@
         e.preventDefault();
         const newOt = {
             id: 'OT-' + (1000 + dataOt.length + 1),
-            equipement: document.getElementById('otEquipement').value,
-            type: document.getElementById('otType').value,
+            equipement: sanitizeInput(document.getElementById('otEquipement').value),
+            type: sanitizeInput(document.getElementById('otType').value),
             duree: parseFloat(document.getElementById('otDuree').value),
-            desc: document.getElementById('otDesc').value,
-            priorite: document.getElementById('otPriorite').value
+            desc: sanitizeInput(document.getElementById('otDesc').value),
+            priorite: sanitizeInput(document.getElementById('otPriorite').value)
         };
         dataOt.push(newOt);
         localStorage.setItem('DATA_OT', JSON.stringify(dataOt));
